@@ -1,11 +1,18 @@
+// Importa el objeto principal de la API de Joplin
 import joplin from 'api';
+
+// Importa los tipos disponibles (aunque en este archivo no se usan directamente)
 import { ContentScriptType } from 'api/types';
 
+// Registra el plugin en Joplin
 joplin.plugins.register({
+  // Función que se ejecuta al iniciar el plugin
   onStart: async function () {
 
+    // Crea un panel web lateral (webview) con ID 'quickNotebookPanel'
     const panel = await joplin.views.panels.create('quickNotebookPanel');
 
+    // Define el contenido HTML que se mostrará en el panel
     await joplin.views.panels.setHtml(panel, `
       <div id="quick-notebook-container" style="
         position: absolute;
@@ -25,49 +32,52 @@ joplin.plugins.register({
       </div>
     `);
 
-
+    // Agrega el script JavaScript al panel que maneja los eventos del botón
     await joplin.views.panels.addScript(panel, './webview/quickNotebook.js');
 
-
+    // Muestra el panel al usuario
     await joplin.views.panels.show(panel);
 
-
+    // Escucha mensajes enviados desde el script del webview
     await joplin.views.panels.onMessage(panel, async (message: any) => {
+      // Si el mensaje recibido tiene nombre 'createQuick', se ejecuta la lógica de creación
       if (message.name === 'createQuick') {
-        console.log('Handling createQuick message');
+        console.log('Handling createQuick message'); // Mensaje de depuración
 
-        const baseTitle = 'Quick Notebook';
-        let notebookTitle = baseTitle;
-        let index = 1;
+        const baseTitle = 'Quick Notebook'; // Título base del cuaderno
+        let notebookTitle = baseTitle;      // Título actual que puede variar si hay duplicados
+        let index = 1;                      // Contador para evitar duplicados
 
         try {
-
+          // Obtiene todos los cuadernos existentes y sus títulos
           const allFolders = await joplin.data.get(['folders'], { fields: ['id', 'title'] });
           const existingTitles = allFolders.items.map((folder: any) => folder.title);
 
-
+          // Mientras ya exista un cuaderno con ese nombre, le añade un número incremental
           while (existingTitles.includes(notebookTitle)) {
             index += 1;
             notebookTitle = `${baseTitle} ${index}`;
           }
 
-
+          // Crea un nuevo cuaderno con un título único
           const notebook = await joplin.data.post(['folders'], null, { title: notebookTitle });
 
-
+          // Define el título y contenido de la nota por defecto
           const noteTitle = 'Quick Note';
           const noteBody = `# Quick Note
 
 This is a quick note created in ${notebookTitle}. You can start writing your thoughts here.`;
 
+          // Crea una nota dentro del cuaderno recién creado
           await joplin.data.post(['notes'], null, {
-            parent_id: notebook.id,
+            parent_id: notebook.id, // Asocia la nota al nuevo cuaderno
             title: noteTitle,
             body: noteBody,
           });
 
-          console.log(`Created notebook "${notebookTitle}" with a new note.`);
+          console.log(`Created notebook "${notebookTitle}" with a new note.`); // Confirmación en consola
         } catch (error) {
+          // Captura y muestra errores si falla la creación
           console.error('Error creating notebook or note:', error);
         }
       }
