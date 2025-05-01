@@ -1,7 +1,5 @@
 // Importa el objeto principal de la API de Joplin
 import joplin from 'api';
-
-// Importa los tipos disponibles (aunque en este archivo no se usan directamente)
 import { ContentScriptType } from 'api/types';
 
 // Registra el plugin en Joplin
@@ -27,7 +25,7 @@ joplin.plugins.register({
           color: white;
           border: none;
           cursor: pointer;">
-          Quick Notebook
+          Cuaderno Rápido
         </button>
       </div>
     `);
@@ -42,11 +40,11 @@ joplin.plugins.register({
     await joplin.views.panels.onMessage(panel, async (message: any) => {
       // Si el mensaje recibido tiene nombre 'createQuick', se ejecuta la lógica de creación
       if (message.name === 'createQuick') {
-        console.log('Handling createQuick message'); // Mensaje de depuración
+        console.log('Procesando mensaje createQuick'); // Mensaje de depuración
 
-        const baseTitle = 'Quick Notebook'; // Título base del cuaderno
-        let notebookTitle = baseTitle;      // Título actual que puede variar si hay duplicados
-        let index = 1;                      // Contador para evitar duplicados
+        const baseTitle = 'Cuaderno Rápido'; // Título base del cuaderno
+        let notebookTitle = baseTitle;       // Título actual que puede variar si hay duplicados
+        let index = 1;                        // Contador para evitar duplicados
 
         try {
           // Obtiene todos los cuadernos existentes y sus títulos
@@ -63,10 +61,26 @@ joplin.plugins.register({
           const notebook = await joplin.data.post(['folders'], null, { title: notebookTitle });
 
           // Define el título y contenido de la nota por defecto
-          const noteTitle = 'Quick Note';
-          const noteBody = `# Quick Note
+          const noteTitle = 'Nota Rápida';
+          const noteBody = `# Nota Rápida
 
-This is a quick note created in ${notebookTitle}. You can start writing your thoughts here.`;
+Espacio creado automáticamente dentro del cuaderno "${notebookTitle}" para que puedas anotar cualquier cosa que necesites capturar de inmediato.
+
+## ¿Qué puedes hacer aquí?
+
+- Escribir pensamientos espontáneos.
+- Anotar ideas antes de que se te olviden.
+- Planificar tareas o actividades.
+- Registrar cualquier información útil al instante.
+
+> Sugerencia: puedes reorganizar esta nota más tarde o moverla a otro cuaderno si lo necesitas.
+
+---
+
+¡Empieza a escribir aquí!
+
+---
+`;
 
           // Crea una nota dentro del cuaderno recién creado
           await joplin.data.post(['notes'], null, {
@@ -75,10 +89,10 @@ This is a quick note created in ${notebookTitle}. You can start writing your tho
             body: noteBody,
           });
 
-          console.log(`Created notebook "${notebookTitle}" with a new note.`); // Confirmación en consola
+          console.log(`Cuaderno "${notebookTitle}" creado con una nueva nota.`); // Confirmación en consola
         } catch (error) {
           // Captura y muestra errores si falla la creación
-          console.error('Error creating notebook or note:', error);
+          console.error('Error al crear cuaderno o nota:', error);
         }
       }
     });

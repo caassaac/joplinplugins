@@ -1,25 +1,27 @@
-// Importa el objeto principal 'joplin' desde la API de plugins de Joplin
+// Importa el objeto principal de la API de Joplin
 import joplin from 'api';
 
-// Registra el plugin en Joplin
+// Registra el plugin dentro del entorno de Joplin
 joplin.plugins.register({
-  // Función que se ejecuta cuando se inicia el plugin
+  // Función que se ejecuta automáticamente cuando inicia
   onStart: async () => {
-    // Crea un nuevo panel lateral (webview) con el ID 'pomodoroPanel'
+    // Crea un nuevo panel de vista (webview) llamado 'pomodoroPanel'
     const panel = await joplin.views.panels.create('pomodoroPanel');
 
-    // Establece el contenido HTML del panel creado
+    // Define el contenido HTML que se mostrará dentro del panel
     await joplin.views.panels.setHtml(panel, `
       <div id="pomodoro" style="font-family:sans-serif;padding:1em;">
-        <h2>Pomodoro Timer</h2> <!-- Título del temporizador -->
-        <div id="display" style="font-size:2em;margin:0.5em 0;">25:00</div> <!-- Pantalla del tiempo -->
-        <button id="start">Start</button> <!-- Botón para iniciar -->
-        <button id="pause">Pause</button> <!-- Botón para pausar -->
-        <button id="reset">Reset</button> <!-- Botón para reiniciar -->
+        <h2>Temporizador Pomodoro</h2> <!-- Título del temporizador -->
+        <div id="modeTitle" style="font-weight:bold;margin-bottom:0.5em;"></div> <!-- Modo actual (trabajo, descanso corto, descanso largo) -->
+        <div id="display" style="font-size:2em;margin:0.5em 0;">25:00</div> <!-- Muestra el tiempo restante -->
+        <button id="start">Iniciar</button>           <!-- Botón para iniciar -->
+        <button id="pause">Pausar</button>            <!-- Botón para pausar -->
+        <button id="resetTimer">Reiniciar Tiempo</button> <!-- Reinicia el temporizador actual -->
+        <button id="resetCycle">Reiniciar Ciclo</button>  <!-- Reinicia el ciclo completo (modo y sesiones) -->
       </div>
     `);
 
-    // Agrega un script externo al panel, que manejará la lógica del timer
+    // Carga el script JavaScript que contiene la lógica del temporizador
     await joplin.views.panels.addScript(panel, './webview/timer.js');
   }
 });
