@@ -1,112 +1,96 @@
-// Función anónima autoinvocada
+// Configuración principal del temporizador
 (() => {
-  // Define las duraciones (en segundos) para cada modo: trabajo, descanso corto y descanso largo
-  const durations = {
-    work: 25 * 60,        // 25 minutos para trabajar
-    shortBreak: 5 * 60,   // 5 minutos de descanso corto
-    longBreak: 15 * 60,   // 15 minutos de descanso largo
+  // Duración en segundos para cada modo
+  const durations = { 
+    work: 1500,        // 25 minutos (trabajo)
+    shortBreak: 300,   // 5 minutos (descanso corto)
+    longBreak: 900     // 15 minutos (descanso largo)
   };
+  
+  // Estado del temporizador
+  let mode = 'work';          // Modo actual
+  let remaining = durations[mode]; // Tiempo restante
+  let intervalId = null;      // Referencia del intervalo
+  let sessionCount = 0;       // Contador de sesiones
 
-  // Estado inicial
-  let mode = 'work';                 // Modo actual (por defecto: trabajo)
-  let remaining = durations[mode];  // Tiempo restante para el modo actual
-  let intervalId = null;            // ID del intervalo activo (para poder detenerlo)
-  let sessionCount = 0;             // Número de sesiones de trabajo completadas
+  // Elementos de la interfaz
+  const display = document.getElementById("display");
+  const modeTitle = document.getElementById("modeTitle");
+  const startBtn = document.getElementById("start");
+  const pauseBtn = document.getElementById("pause");
+  const resetTimerBtn = document.getElementById("resetTimer");
+  const resetCycleBtn = document.getElementById("resetCycle");
 
-  // Referencias a los elementos del DOM para actualizar la interfaz
-  const display       = document.getElementById("display");       // Muestra el tiempo restante
-  const modeTitle     = document.getElementById("modeTitle");     // Muestra el modo actual
-  const startBtn      = document.getElementById("start");         // Botón iniciar
-  const pauseBtn      = document.getElementById("pause");         // Botón pausar
-  const resetTimerBtn = document.getElementById("resetTimer");    // Botón reiniciar temporizador
-  const resetCycleBtn = document.getElementById("resetCycle");    // Botón reiniciar ciclo completo
-
-  // Convierte un tiempo en segundos a formato mm:ss
+  // Formatea segundos a MM:SS
   function formatTime(sec) {
-    const m = String(Math.floor(sec / 60)).padStart(2, "0"); // Minutos con cero a la izquierda
-    const s = String(sec % 60).padStart(2, "0");              // Segundos con cero a la izquierda
+    const m = String(Math.floor(sec / 60)).padStart(2, "0");
+    const s = String(sec % 60).padStart(2, "0");
     return `${m}:${s}`;
   }
 
-  // Actualiza la visualización del temporizador y del modo actual
+  // Actualiza la interfaz con el estado actual
   function updateDisplay() {
-    display.textContent = formatTime(remaining); // Actualiza el tiempo restante
-    // Muestra el nombre del modo actual
-    modeTitle.textContent = `Modo: ${mode === 'work'
+    display.textContent = formatTime(remaining);
+    modeTitle.textContent = mode === 'work'
       ? 'Trabajo'
       : mode === 'shortBreak'
         ? 'Descanso Corto'
-        : 'Descanso Largo'}`;
+        : 'Descanso Largo';
   }
 
-  // Cambia entre modos de trabajo y descanso cuando se completa un ciclo
+  // Cambia entre modos de trabajo/descanso
   function switchMode() {
     if (mode === 'work') {
-      sessionCount++; // Incrementa el número de sesiones completadas
-      // Cada 4 sesiones de trabajo, se hace un descanso largo
+      sessionCount++;
       mode = (sessionCount % 4 === 0) ? 'longBreak' : 'shortBreak';
     } else {
-      // Después de un descanso, vuelve al modo de trabajo
       mode = 'work';
     }
-    // Reinicia el temporizador para el nuevo modo
     remaining = durations[mode];
-    updateDisplay(); // Actualiza la interfaz
-    // Alerta al usuario del cambio de modo
+    updateDisplay();
     alert(mode === 'work' ? '¡Hora de trabajar!' : '¡Hora de descansar!');
   }
 
-  // Función que se ejecuta cada segundo durante el conteo
+  // Función principal del temporizador
   function tick() {
     if (remaining > 0) {
-      remaining--;     // Reduce el tiempo restante
-      updateDisplay(); // Actualiza el tiempo en pantalla
+      remaining--;
+      updateDisplay();
     } else {
-      // Si se termina el tiempo, detiene el intervalo
       clearInterval(intervalId);
       intervalId = null;
-      // Cambia de modo automáticamente
       switchMode();
     }
   }
 
-  // Inicia el temporizador si no está ya corriendo
+  // Event Listeners
   startBtn.addEventListener("click", () => {
-    if (!intervalId) {
-      intervalId = setInterval(tick, 1000); // Ejecuta 'tick' cada segundo
-    }
+    if (!intervalId) intervalId = setInterval(tick, 1000);
   });
 
-  // Pausa el temporizador si está activo
   pauseBtn.addEventListener("click", () => {
     if (intervalId) {
-      clearInterval(intervalId); // Detiene el intervalo
+      clearInterval(intervalId);
       intervalId = null;
     }
   });
 
-  // Reinicia el tiempo del modo actual, sin cambiar de modo ni sesiones
   resetTimerBtn.addEventListener("click", () => {
-    if (intervalId) {
-      clearInterval(intervalId); // Detiene el temporizador si está activo
-      intervalId = null;
-    }
-    remaining = durations[mode]; // Restaura el tiempo original del modo actual
+    clearInterval(intervalId);
+    intervalId = null;
+    remaining = durations[mode];
     updateDisplay();
   });
 
-  // Reinicia completamente el ciclo: modo vuelve a 'work' y sesiones a 0
   resetCycleBtn.addEventListener("click", () => {
-    if (intervalId) {
-      clearInterval(intervalId); // Detiene el temporizador si está activo
-      intervalId = null;
-    }
-    mode = 'work';               // Vuelve al modo de trabajo
-    sessionCount = 0;            // Reinicia el contador de sesiones
-    remaining = durations[mode]; // Restaura el tiempo inicial
+    clearInterval(intervalId);
+    intervalId = null;
+    mode = 'work';
+    sessionCount = 0;
+    remaining = durations[mode];
     updateDisplay();
   });
 
-  // Inicializa la vista al cargar el plugin
+  // Inicialización
   updateDisplay();
 })();

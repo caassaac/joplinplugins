@@ -1,100 +1,110 @@
-// Importa el objeto principal de la API de Joplin
+// Importación de la API de Joplin para desarrollar plugins
 import joplin from 'api';
-import { ContentScriptType } from 'api/types';
 
-// Registra el plugin en Joplin
+// Registro del plugin principal
 joplin.plugins.register({
   // Función que se ejecuta al iniciar el plugin
-  onStart: async function () {
+  onStart: async () => {
+    // Creación del panel flotante para el cuaderno rápido
+    const panelId = await joplin.views.panels.create('quickNotebookPanel');
 
-    // Crea un panel web lateral (webview) con ID 'quickNotebookPanel'
-    const panel = await joplin.views.panels.create('quickNotebookPanel');
-
-    // Define el contenido HTML que se mostrará en el panel
-    await joplin.views.panels.setHtml(panel, `
-      <div id="quick-notebook-container" style="
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1000;">
-        <button id="quick-notebook-btn" style="
-          padding: 0.6em 1em;
-          border-radius: 5px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-          background: #4CAF50;
-          color: white;
+    // CSS adaptado al modo oscuro de Joplin usando variables nativas
+    const sharedCss = `
+      <style>
+        :root {
+          /* Utilización de variables CSS de Joplin para compatibilidad con temas */
+          --primary-bg: var(--joplin-background-color);
+          --panel-bg: var(--joplin-background-color);
+          --accent: var(--joplin-color-accent);
+          --text-color: var(--joplin-color);
+          --font-family: var(--joplin-font-family);
+        }
+        #quick-notebook-container {
+          background: var(--panel-bg);
+          padding: 1rem;
+          font-family: var(--font-family);
+          color: var(--text-color);
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3); /* Sombras más intensas para contraste */
+          position: absolute;
+          bottom: 20px;
+          right: 20px;
+          border: 1px solid var(--joplin-divider-color); /* Borde para mejor definición */
+        }
+        #quick-notebook-btn {
+          background: var(--accent);
+          color: var(--joplin-color-button-text);
           border: none;
-          cursor: pointer;">
-          Cuaderno Rápido
-        </button>
+          border-radius: 4px;
+          padding: 0.6em 1em;
+          cursor: pointer;
+          font-size: 1rem;
+          transition: filter 0.2s ease; /* Transición suave para hover */
+        }
+        #quick-notebook-btn:hover {
+          filter: brightness(0.9); /* Efecto hover más universal para temas */
+        }
+      </style>
+    `;
+
+    // Configuración del HTML del panel con estilos actualizados
+    await joplin.views.panels.setHtml(panelId, `
+      ${sharedCss}
+      <div id="quick-notebook-container">
+        <button id="quick-notebook-btn">Cuaderno Rápido</button>
       </div>
     `);
 
-    // Agrega el script JavaScript al panel que maneja los eventos del botón
-    await joplin.views.panels.addScript(panel, './webview/quickNotebook.js');
+    // Carga del script JavaScript asociado
+    await joplin.views.panels.addScript(panelId, './webview/quickNotebook.js');
+    await joplin.views.panels.show(panelId, true);
 
-    // Muestra el panel al usuario
-    await joplin.views.panels.show(panel);
-
-    // Escucha mensajes enviados desde el script del webview
-    await joplin.views.panels.onMessage(panel, async (message: any) => {
-      // Si el mensaje recibido tiene nombre 'createQuick', se ejecuta la lógica de creación
+    // Manejador de mensajes desde la interfaz
+    await joplin.views.panels.onMessage(panelId, async (message: any) => {
       if (message.name === 'createQuick') {
-        console.log('Procesando mensaje createQuick'); // Mensaje de depuración
+        console.log('Iniciando creación de cuaderno rápido...');
 
-        const baseTitle = 'Cuaderno Rápido'; // Título base del cuaderno
-        let notebookTitle = baseTitle;       // Título actual que puede variar si hay duplicados
-        let index = 1;                        // Contador para evitar duplicados
+        // Configuración inicial de nombres
+        const baseTitle = 'Cuaderno Rápido';
+        let notebookTitle = baseTitle;
+        let index = 1;
 
         try {
-          // Obtiene todos los cuadernos existentes y sus títulos
+          // Obtención de todos los cuadernos existentes
           const allFolders = await joplin.data.get(['folders'], { fields: ['id', 'title'] });
-          const existingTitles = allFolders.items.map((folder: any) => folder.title);
+          const existingTitles = allFolders.items.map((f: any) => f.title);
 
-          // Mientras ya exista un cuaderno con ese nombre, le añade un número incremental
+          // Generación de título único
           while (existingTitles.includes(notebookTitle)) {
-            index += 1;
+            index++;
             notebookTitle = `${baseTitle} ${index}`;
           }
 
-          // Crea un nuevo cuaderno con un título único
+          // Creación del nuevo cuaderno
           const notebook = await joplin.data.post(['folders'], null, { title: notebookTitle });
 
-          // Define el título y contenido de la nota por defecto
+          // Configuración de la nota inicial
           const noteTitle = 'Nota Rápida';
           const noteBody = `# Nota Rápida
 
-Espacio creado automáticamente dentro del cuaderno "${notebookTitle}" para que puedas anotar cualquier cosa que necesites capturar de inmediato.
-
-## ¿Qué puedes hacer aquí?
-
-- Escribir pensamientos espontáneos.
-- Anotar ideas antes de que se te olviden.
-- Planificar tareas o actividades.
-- Registrar cualquier información útil al instante.
-
-> Sugerencia: puedes reorganizar esta nota más tarde o moverla a otro cuaderno si lo necesitas.
+Este espacio fue creado automáticamente en "${notebookTitle}". ¡Empieza a capturar tus ideas aquí!
 
 ---
 
-¡Empieza a escribir aquí!
-
----
 `;
 
-          // Crea una nota dentro del cuaderno recién creado
+          // Creación de la primera nota en el cuaderno
           await joplin.data.post(['notes'], null, {
-            parent_id: notebook.id, // Asocia la nota al nuevo cuaderno
+            parent_id: notebook.id,
             title: noteTitle,
             body: noteBody,
           });
 
-          console.log(`Cuaderno "${notebookTitle}" creado con una nueva nota.`); // Confirmación en consola
+          console.log(`Cuaderno "${notebookTitle}" creado exitosamente con nota inicial.`);
         } catch (error) {
-          // Captura y muestra errores si falla la creación
-          console.error('Error al crear cuaderno o nota:', error);
+          console.error('Error al crear el cuaderno:', error);
         }
       }
     });
-  },
+  }
 });

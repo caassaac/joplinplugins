@@ -1,12 +1,18 @@
+// Función auto-ejecutable para encapsular la lógica
 (() => {
-  // Obtiene el botón del DOM dentro del panel HTML
+  // Obtención del botón de la interfaz
   const btn = document.getElementById("quick-notebook-btn");
-
-  // Agrega un listener para detectar clics en el botón
+  
+  // Validación de existencia del elemento
+  if (!btn) {
+    console.error('Error en plugin Cuaderno Rápido: Botón no encontrado');
+    return;
+  }
+  
+  // Manejador de evento click
   btn.addEventListener("click", () => {
-    console.log("Botón clicado, enviando mensaje al plugin"); // Mensaje de depuración
-
-    // Envía un mensaje al backend del plugin indicando que se debe crear un cuaderno y nota rápida
+    console.info('Plugin Cuaderno Rápido: Botón presionado');
+    // Envío de mensaje al backend del plugin
     webviewApi.postMessage({ name: "createQuick" });
   });
 })();
