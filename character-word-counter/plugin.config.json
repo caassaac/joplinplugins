@@ -1,0 +1,4 @@
+{
+  "assets": ["assets/index.js"],
+  "webviewScripts": ["assets/index.js"]
+}
